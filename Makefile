@@ -27,8 +27,8 @@ REGRESS = preseed infofuncs init_fail init preseed_check basic extended conflict
 		  row_filter_sampling att_list column_filter apply_delay multiple_upstreams \
 		  map node_origin_cascade drop
 
-EXTRA_CLEAN += compat94/pglogical_compat.o compat95/pglogical_compat.o \
-			   compat96/pglogical_compat.o compat10/pglogical_compat.o \
+EXTRA_CLEAN += compat96/pglogical_compat.o compat10/pglogical_compat.o \
+			   compat11/pglogical_compat.o compat12/pglogical_compat.o \
 			   pglogical_create_subscriber.o
 
 # The # in #define is taken as a comment, per https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=142043

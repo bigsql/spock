@@ -1,42 +1,43 @@
-# pglogical 2
+# spock
 
-The pglogical 2 extension provides logical streaming replication for PostgreSQL,
-using a publish/subscribe model. It is based on technology developed as part
-of the BDR project (http://2ndquadrant.com/BDR).
+spock is a fork of the "2ndquadrant/pglogical" project that supports bi-directional
+replication with conflict resolution for PG 9.6+.
 
-We use the following terms to describe data streams between nodes, deliberately
-reused from the earlier Slony technology:
+Spock provides logical streaming replication for PostgreSQL,
+using a publish/subscribe model. It works on a per database level, not whole server level
+like physical streaming replication. One Provider may feed multiple Subscribers without 
+incurring additional disk write overhead.
+
+Major use cases supported are:
+
+* Bi-directional replication w/ conflict resolution
+* Upgrades between major versions
+* Full database replication or selective replication of:
+  - sets of tables using replication sets
+  - table rows at either publisher or subscriber side (row_filter)
+  - table columns at publisher side
+* Data gather/merge from multiple upstream servers
+
+Recent releases bring new features allowing it to be used for even more use-cases and also several bug fixes and behavior improvements listed below:
+
+- Improved error reporting
+- Row filtering on provider
+- Column filtering on provider
+- Delayed replication
+- MS Windows support (source code only)
+- Ability to convert physical standby to logical replication
+- Greatly improved performance for replication of large INSERT/COPY transactions
+- Improved memory management.
+
+We use the following terms to describe data streams between nodes:
+
 * Nodes - PostgreSQL database instances
 * Providers and Subscribers - roles taken by Nodes
 * Replication Set - a collection of tables
 
-pglogical is utilising the latest in-core features, so we have these version restrictions:
-* Provider & subscriber nodes must run PostgreSQL 9.4+
-* PostgreSQL 9.5+ is required for replication origin filtering and conflict detection
-* Additionally, subscriber can be Postgres-XL 9.5+
-
-Use cases supported are:
-* Upgrades between major versions (given the above restrictions)
-* Full database replication
-* Selective replication of sets of tables using replication sets
-* Selective replication of table rows at either publisher or subscriber side (row_filter)
-* Selective replication of table columns at publisher side
-* Data gather/merge from multiple upstream servers
-* Data gather/merge from multiple upstream tables (distinct names)
-
-Architectural details:
-* pglogical works on a per-database level, not whole server level like
-  physical streaming replication
-* One Provider may feed multiple Subscribers without incurring additional disk
-  write overhead
-* One Subscriber can merge changes from several origins and detect conflict
-  between changes with automatic and configurable conflict resolution (some,
-  but not all aspects required for multi-master).
-* Cascading replication is implemented in the form of changeset forwarding.
-
 ## Requirements
 
-To use pglogical the provider and subscriber must be running PostgreSQL 9.4 or newer.
+To use spock the provider and subscriber must be running PostgreSQL 9.6 or newer.
 
 The `pglogical` extension must be installed on both provider and subscriber.
 You must `CREATE EXTENSION pglogical` on both.
@@ -53,109 +54,9 @@ Tables must have the same `PRIMARY KEY`s. It is not recommended to add additiona
 
 Some additional requirements are covered in "Limitations and Restrictions", below.
 
-## Installation
-
-### Packages
-
-pglogical is available as RPMs via yum for Fedora, CentOS, & RHEL, and as DEBs
-via apt for Debian and Ubuntu, or as source code here. Please see below for
-instructions on installing from source.
-
-#### Installing pglogical with YUM
-
-The instructions below are valid for Red Hat family of operating systems (RHEL, CentOS, Fedora).
-Pre-Requisites
-
-##### Pre-requisites
-
-These RPMs all require the PGDG PostgreSQL releases from http://yum.postgresql.org/.
-You cannot use them with stock PostgreSQL releases included in Fedora and RHEL.
-If you don’t have PostgreSQL already:
-
- - Install the appropriate PGDG repo rpm from http://yum.postgresql.org/repopackages.php
- - Install PostgreSQL
-    - PostgreSQL 9.4: `yum install postgresql94-server postgresql94-contrib`
-    - PostgreSQL 9.5: `yum install postgresql95-server postgresql95-contrib`
-    - PostgreSQL 9.6: `yum install postgresql96-server postgresql96-contrib`
-    - PostgreSQL 10: `yum install postgresql10-server postgresql10-contrib`
-    - PostgreSQL 11: `yum install postgresql11-server postgresql11-contrib`
-
-Then install the “2ndQuadrant’s General Public” repository for your PostgreSQL
-version, by running the following instructions as root on the destination Linux server:
-
- - PostgreSQL 9.4: `curl https://access.2ndquadrant.com/api/repository/dl/default/release/9.4/rpm | bash`
- - PostgreSQL 9.5: `curl https://access.2ndquadrant.com/api/repository/dl/default/release/9.5/rpm | bash`
- - PostgreSQL 9.6: `curl https://access.2ndquadrant.com/api/repository/dl/default/release/9.6/rpm | bash`
- - PostgreSQL 10: `curl https://access.2ndquadrant.com/api/repository/dl/default/release/10/rpm | bash`
- - PostgreSQL 11: `curl https://access.2ndquadrant.com/api/repository/dl/default/release/11/rpm | bash`
-
-##### Installation
-
-Once the repository is installed, you can proceed to pglogical for your PostgreSQL version:
-
- - PostgreSQL 9.4: `yum install postgresql94-pglogical`
- - PostgreSQL 9.5: `yum install postgresql95-pglogical`
- - PostgreSQL 9.6: `yum install postgresql96-pglogical`
- - PostgreSQL 10: `yum install postgresql10-pglogical`
- - PostgreSQL 11: `yum install postgresql11-pglogical`
-
-You may be prompted to accept the repository GPG key for package signing:
-
-    Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-2NDQ-DL-DEFAULT Importing GPG key 0xD6BAF0C3: Userid : "Public repository signing key 2ndQuadrant <ci@2ndquadrant.com>" Fingerprint: 8565 305c ea7d 0b66 4933 d250 9904 cd4b d6ba f0c3 From : /etc/pki/rpm-gpg/RPM-GPG-KEY-2NDQ-DL-DEFAULT Is this ok [y/N]:
-
-If so, accept the key (if it matches the above) by pressing ‘y’ then enter.
-(It’s signed by the 2ndQuadrant master packaging key, if you want to verify that.)
-
-#### Installing pglogical with APT
-
-The instructions below are valid for Debian and all Linux flavors based on
-Debian (e.g. Ubuntu).
-
-##### Pre-requisites
-
-You can install the “2ndQuadrant’s General Public” repository by running the
-following instructions as root on the destination Linux server: `curl https://access.2ndquadrant.com/api/repository/dl/default/release/deb | bash`
-
- - Add the http://apt.postgresql.org/ repository. See the site for instructions.
-
-##### Installation
-
-Once pre-requisites are complete, installing pglogical is simply a matter of executing the following for your version of PostgreSQL:
-
- - PostgreSQL 9.4: `sudo apt-get install postgresql-9.4-pglogical`
- - PostgreSQL 9.5: `sudo apt-get install postgresql-9.5-pglogical`
- - PostgreSQL 9.6: `sudo apt-get install postgresql-9.6-pglogical`
- - PostgreSQL 10: `sudo apt-get install postgresql-10-pglogical`
- - PostgreSQL 11: `sudo apt-get install postgresql-11-pglogical`
-
-### From source code
-
-Source code installs are the same as for any other PostgreSQL extension built
-using PGXS.
-
-Make sure the directory containing `pg_config` from the PostgreSQL release is
-listed in your `PATH` environment variable. You might have to install a `-dev`
-or `-devel` package for your PostgreSQL release from your package manager if
-you don't have `pg_config`.
-
-Then run `make` to compile, and `make install` to
-install. You might need to use `sudo` for the install step.
-
-e.g. for a typical Fedora or RHEL 7 install, assuming you're using the
-[yum.postgresql.org](http://yum.postgresql.org) packages for PostgreSQL:
-
-    sudo dnf install postgresql95-devel
-    PATH=/usr/pgsql-9.5/bin:$PATH make clean all
-    sudo PATH=/usr/pgsql-9.5/bin:$PATH make install
-
 ## Usage
 
-This section describes basic usage of the pglogical replication extension.
-
-### Quick setup
-
-First the PostgreSQL server has to be properly configured to support logical
-decoding:
+First the Postgres server has to be properly configured to support logical decoding:
 
     wal_level = 'logical'
     max_worker_processes = 10   # one per database needed on provider node
@@ -163,24 +64,13 @@ decoding:
     max_replication_slots = 10  # one per node needed on provider node
     max_wal_senders = 10        # one per node needed on provider node
     shared_preload_libraries = 'pglogical'
-
-If you are using PostgreSQL 9.5+ (this won't work on 9.4) and want to handle
-conflict resolution with last/first update wins (see [Conflicts](#conflicts)),
-you can add this additional option to postgresql.conf:
-
     track_commit_timestamp = on # needed for last/first update wins conflict resolution
-                                # property available in PostgreSQL 9.5+
 
 `pg_hba.conf` has to allow replication connections from localhost.
 
 Next the `pglogical` extension has to be installed on all nodes:
 
     CREATE EXTENSION pglogical;
-
-If using PostgreSQL 9.4, then the `pglogical_origin` extension
-also has to be installed on that node:
-
-    CREATE EXTENSION pglogical_origin;
 
 Now create the provider node:
 
@@ -297,9 +187,9 @@ Nodes can be added and removed dynamically using the SQL interfaces.
     changes no matter what is their origin, default is "{all}"
   - `apply_delay` - how much to delay replication, default is 0 seconds
   - `force_text_transfer` - force the provider to replicate all columns
-    using a text representation (which is slower, but may be used to
-    change the type of a replicated column on the subscriber), default
-    is false
+     using a text representation (which is slower, but may be used to
+     change the type of a replicated column on the subscriber), default
+     is false
 
   The `subscription_name` is used as `application_name` by the replication
   connection. This means that it's visible in the `pg_stat_replication`
@@ -656,8 +546,8 @@ It is required to mark any such triggers as either `ENABLE REPLICA` or
 `ENABLE ALWAYS` otherwise they will not be executed by the replication
 process.
 
-### Table and Sequence renaming
-
+### Table and Sequence renaming                                                    
+                                                                                   
 It is possible to set distinct names for schema and/or relations while adding
 them to the replication set on the provider side. This way, the receiver does
 not know the original name and it's possible to merge 2 and more tables from the
@@ -674,8 +564,9 @@ when `COMMIT` command reports success to client if pglogical subscription
 name is used in `synchronous_standby_names`. Refer to PostgreSQL
 documentation for more info about how to configure these two variables.
 
-# Table and Sequence names
-
+                                                                                   
+# Table and Sequence names                                                         
+                                                                                   
 By default, relation and schema name are the same on the receiver and the
 provider. However 2 columns are used to track the target names to offer the
 user to change them, the receiver does not know about the original names,
@@ -722,11 +613,7 @@ can be either set in `postgresql.conf` or via `ALTER SYSTEM SET`.
   The default value in PostgreSQL is `apply_remote`.
 
   The `keep_local`, `last_update_wins` and `first_update_wins` settings
-  require `track_commit_timestamp` PostgreSQL setting to be enabled. As
-  `track_commit_timestamp` is not available in PostgreSQL 9.4
-  `pglogical.conflict_resolution` can only be `apply_remote` or `error`.
-
-  In Postgres-XL, the only supported value and the default is `error`.
+  require `track_commit_timestamp` PostgreSQL setting to be enabled.
 
 - `pglogical.conflict_log_level`
   Sets the log level for reporting detected conflicts when the
@@ -760,14 +647,12 @@ can be either set in `postgresql.conf` or via `ALTER SYSTEM SET`.
   (`INSERT`, `UPDATE`, `DELETE`) statements to apply incoming changes instead
   of using internal low level interface.
 
-  This is mainly useful for Postgres-XL and debugging purposes.
+  This is mainly useful for debugging purposes.
 
   The default in PostgreSQL is `false`.
 
   This can be set to `true` only when `pglogical.conflict_resolution` is set to `error`.
 In this state, conflicts are not detected.
-
-  In Postgres-XL the default and only allowed setting is `true`.
 
 - `pglogical.temp_directory`
   Defines system path where to put temporary files needed for schema
@@ -909,10 +794,9 @@ and `ENABLE ALWAYS` triggers will be fired.
 
 ### PostgreSQL Version differences
 
-PGLogical can replicate across PostgreSQL major versions. Despite that, long
-term cross-version replication is not considered a design target, though it may
-often work. Issues where changes are valid on the provider but not on the
-subscriber are more likely to arise when replicating across versions.
+PGLogical can replicate across PostgreSQL major versions. Issues where changes are
+valid on the provider but not on the subscriber are more likely to arise when
+replicating across versions.
 
 It is safer to replicate from an old version to a newer version since PostgreSQL
 maintains solid backward compatibility but only limited forward compatibility.
@@ -931,39 +815,9 @@ encoding. We recommend using `UTF-8` encoding in all replicated databases.
 PostgreSQL's logical decoding facility does not support decoding changes
 to large objects, so pglogical cannot replicate large objects.
 
-### Postgres-XL
 
-Minimum supported version of Postgres-XL is 9.5r1.5.
+## License
 
-Postgres-XL is only supported as subscriber (cannot be a provider). For
-workloads with many small transactions the performance of replication may
-suffer due to increased write latency. On the other hand large insert
-(or bulkcopy) transactions are heavily optimized to work very fast with
-Postgres-XL.
+spock license is The PostgreSQL License
 
-Also any DDL limitations apply so extra care need to be taken when using
-`replicate_ddl_command()`.
-
-Postgres-XL changes defaults and available settings for
-`pglogical.conflict_resolution` and `pglogical.use_spi` configuration options.
-
-### BDR
-
-`pglogical` does not currently interoperate well with BDR. BDR nodes will not
-forward writes made by pglogical subscribers. And pglogical providers will not
-decode and send writes made on other BDR nodes to the pglogical subscriber.
-
-This restriction may be lifted at a later time.
-
-## Credits and License
-
-pglogical has been designed, developed and tested by the 2ndQuadrant team
-* Petr Jelinek
-* Craig Ringer
-* Simon Riggs
-* Pallavi Sontakke
-* Umair Shahid
-
-pglogical license is The PostgreSQL License
-
-pglogical copyright is donated to PostgreSQL Global Development Group
+spock copyright is donated to PostgreSQL Global Development Group

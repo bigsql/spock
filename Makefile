@@ -2,23 +2,11 @@
 
 MODULE_big = pglogical
 EXTENSION = pglogical
-PGFILEDESC = "pglogical - logical replication"
+PGFILEDESC = "spock - bi-directional logical replication with with conflict resolution"
 
 MODULES = pglogical_output
 
-DATA = pglogical--1.0.0.sql pglogical--1.0.0--1.0.1.sql \
-	   pglogical--1.0.1--1.1.0.sql \
-	   pglogical--1.1.0--1.1.1.sql pglogical--1.1.1--1.1.2.sql \
-	   pglogical--1.1.2--1.2.0.sql \
-	   pglogical--1.2.0--1.2.1.sql pglogical--1.2.1--1.2.2.sql \
-	   pglogical--1.2.2--2.0.0.sql \
-	   pglogical--2.0.0--2.0.1.sql \
-	   pglogical--2.0.0--2.1.0.sql pglogical--2.0.1--2.1.0.sql \
-	   pglogical--2.1.0--2.1.1.sql pglogical--2.1.1--2.2.0.sql \
-	   pglogical--2.2.0.sql \
-	   pglogical--2.2.0--2.2.1.sql pglogical--2.2.1.sql \
-	   pglogical--2.2.1--2.2.2.sql pglogical--2.2.2.sql \
-	   pglogical--2.2.2--2.3.0.sql \
+DATA = pglogical--2.2.2--2.3.0.sql \
 	   pglogical--2.3.0.sql
 
 OBJS = pglogical_apply.o pglogical_conflict.o pglogical_manager.o \
@@ -62,24 +50,8 @@ SHLIB_LINK += $(libpq)
 
 OBJS += $(srcdir)/compat$(PGVER)/pglogical_compat.o
 
-ifeq ($(PGVER),94)
-DATA += compat94/pglogical_origin.control compat94/pglogical_origin--1.0.0.sql
-REGRESS = preseed infofuncs init preseed_check basic extended \
-		  toasted replication_set add_table matview primary_key \
-		  interfaces foreign_key functions copy triggers parallel \
-		  att_list column_filter apply_delay multiple_upstreams \
-		  node_origin_cascade drop
-
-REGRESS += --dbname=regression
-SCRIPTS_built += pglogical_dump/pglogical_dump
-SCRIPTS += pglogical_dump/pglogical_dump
-requires = requires=pglogical_origin
-control_path = $(abspath $(abs_top_builddir))/pglogical.control
-else
-DATA += pglogical_origin.control pglogical_origin--1.0.0.sql
 requires =
 control_path = $(abspath $(srcdir))/pglogical.control
-endif
 
 EXTRA_CLEAN += $(control_path)
 
@@ -88,20 +60,6 @@ PGXS = $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
 
-ifeq ($(PGVER),94)
-regresscheck: ;
-check: ;
-
-$(srcdir)/pglogical_dump/pg_dump.c:
-	$(warning pglogical_dump empty, trying to fetch as submodule)
-	git submodule init
-	git submodule update
-
-pglogical_dump/pglogical_dump: pglogical_dump/pg_dump.c
-
-SUBDIRS += pglogical_dump
-
-else
 # We can't do a normal 'make check' because PGXS doesn't support
 # creating a temp install. We don't want to use a normal PGXS
 # 'installcheck' though, because it's a pain to set up a temp install
@@ -123,8 +81,6 @@ regresscheck:
 	    $(REGRESS)
 
 check: install regresscheck
-
-endif
 
 pglogical_create_subscriber: pglogical_create_subscriber.o pglogical_fe.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LDFLAGS_EX) $(libpq_pgport) $(LIBS) -o $@$(X)

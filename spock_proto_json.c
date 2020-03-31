@@ -1,12 +1,12 @@
 /*-------------------------------------------------------------------------
  *
- * pglogical_proto_json.c
- * 		pglogical protocol functions for json support
+ * spock_proto_json.c
+ * 		spock protocol functions for json support
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		  pglogical_proto_json.c
+ *		  spock_proto_json.c
  *
  *-------------------------------------------------------------------------
  */
@@ -35,8 +35,8 @@
 #include "utils/timestamp.h"
 #include "utils/typcache.h"
 
-#include "pglogical_output_plugin.h"
-#include "pglogical_proto_json.h"
+#include "spock_output_plugin.h"
+#include "spock_proto_json.h"
 
 #ifdef HAVE_REPLICATION_ORIGINS
 #include "replication/origin.h"
@@ -50,7 +50,7 @@ json_write_tuple(StringInfo out, Relation rel, HeapTuple tuple,
  * Write BEGIN to the output stream.
  */
 void
-pglogical_json_write_begin(StringInfo out, PGLogicalOutputData *data, ReorderBufferTXN *txn)
+spock_json_write_begin(StringInfo out, SpockOutputData *data, ReorderBufferTXN *txn)
 {
 	appendStringInfoChar(out, '{');
 	appendStringInfoString(out, "\"action\":\"B\"");
@@ -80,7 +80,7 @@ pglogical_json_write_begin(StringInfo out, PGLogicalOutputData *data, ReorderBuf
  * Write COMMIT to the output stream.
  */
 void
-pglogical_json_write_commit(StringInfo out, PGLogicalOutputData *data, ReorderBufferTXN *txn,
+spock_json_write_commit(StringInfo out, SpockOutputData *data, ReorderBufferTXN *txn,
 						XLogRecPtr commit_lsn)
 {
 	appendStringInfoChar(out, '{');
@@ -102,7 +102,7 @@ pglogical_json_write_commit(StringInfo out, PGLogicalOutputData *data, ReorderBu
  * Generic function handling DML changes.
  */
 static void
-pglogical_json_write_change(StringInfo out, const char *change, Relation rel,
+spock_json_write_change(StringInfo out, const char *change, Relation rel,
 							HeapTuple oldtuple, HeapTuple newtuple,
 							Bitmapset *att_list)
 {
@@ -129,33 +129,33 @@ pglogical_json_write_change(StringInfo out, const char *change, Relation rel,
  * Write INSERT to the output stream.
  */
 void
-pglogical_json_write_insert(StringInfo out, PGLogicalOutputData *data,
+spock_json_write_insert(StringInfo out, SpockOutputData *data,
 							Relation rel, HeapTuple newtuple,
 							Bitmapset *att_list)
 {
-	pglogical_json_write_change(out, "I", rel, NULL, newtuple, att_list);
+	spock_json_write_change(out, "I", rel, NULL, newtuple, att_list);
 }
 
 /*
  * Write UPDATE to the output stream.
  */
 void
-pglogical_json_write_update(StringInfo out, PGLogicalOutputData *data,
+spock_json_write_update(StringInfo out, SpockOutputData *data,
 							Relation rel, HeapTuple oldtuple,
 							HeapTuple newtuple, Bitmapset *att_list)
 {
-	pglogical_json_write_change(out, "U", rel, oldtuple, newtuple, att_list);
+	spock_json_write_change(out, "U", rel, oldtuple, newtuple, att_list);
 }
 
 /*
  * Write DELETE to the output stream.
  */
 void
-pglogical_json_write_delete(StringInfo out, PGLogicalOutputData *data,
+spock_json_write_delete(StringInfo out, SpockOutputData *data,
 							Relation rel, HeapTuple oldtuple,
 							Bitmapset *att_list)
 {
-	pglogical_json_write_change(out, "D", rel, oldtuple, NULL, att_list);
+	spock_json_write_change(out, "D", rel, oldtuple, NULL, att_list);
 }
 
 /*

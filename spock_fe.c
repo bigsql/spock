@@ -1,18 +1,18 @@
 /*-------------------------------------------------------------------------
  *
- * pglogical.c
- * 		pglogical utility functions shared between backend and frontend
+ * spock.c
+ * 		spock utility functions shared between backend and frontend
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		  pglogical.c
+ *		  spock.c
  *
  *-------------------------------------------------------------------------
  */
 #include "postgres_fe.h"
 
-#include "pglogical_fe.h"
+#include "spock_fe.h"
 
 /*
  * Find another program in our binary's directory,

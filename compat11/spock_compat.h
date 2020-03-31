@@ -1,5 +1,5 @@
-#ifndef PG_LOGICAL_COMPAT_H
-#define PG_LOGICAL_COMPAT_H
+#ifndef SPOCK_COMPAT_H
+#define SPOCK_COMPAT_H
 
 #include "utils/varlena.h"
 
@@ -23,7 +23,7 @@
 #define ExecAlterExtensionStmt(stmt) \
 	ExecAlterExtensionStmt(NULL, stmt)
 
-#define pgl_replorigin_drop(roident) \
+#define spk_replorigin_drop(roident) \
 	replorigin_drop(roident, true)
 
 /*
@@ -54,18 +54,18 @@
 
 #define makeDefElem(name, arg) makeDefElem(name, arg, -1)
 
-#define PGLstandard_ProcessUtility(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
+#define SPKstandard_ProcessUtility(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
 	standard_ProcessUtility(pstmt, queryString, context, params, queryEnv, dest, completionTag)
 
-#define PGLnext_ProcessUtility_hook(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
+#define SPKnext_ProcessUtility_hook(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
 	next_ProcessUtility_hook(pstmt, queryString, context, params, queryEnv, dest, completionTag)
 
-#define PGLCreateTrigger(stmt, queryString, relOid, refRelOid, constraintOid, indexOid, isInternal) \
+#define SPKCreateTrigger(stmt, queryString, relOid, refRelOid, constraintOid, indexOid, isInternal) \
 	CreateTrigger(stmt, queryString, relOid, refRelOid, constraintOid, indexOid, InvalidOid, InvalidOid, NULL, isInternal, false);
 
-#define	PGLDoCopy(stmt, queryString, processed) DoCopy(NULL, stmt, -1, 0, processed)
+#define	SPKDoCopy(stmt, queryString, processed) DoCopy(NULL, stmt, -1, 0, processed)
 
-#define PGLReplicationSlotCreate(name, db_specific, persistency) ReplicationSlotCreate(name, db_specific, persistency)
+#define SPKReplicationSlotCreate(name, db_specific, persistency) ReplicationSlotCreate(name, db_specific, persistency)
 
 #ifndef rbtxn_has_catalog_changes
 #define rbtxn_has_catalog_changes(txn) (txn->has_catalog_changes)
@@ -80,7 +80,7 @@
 
 #define DatumGetJsonb DatumGetJsonbP
 
-#define pgl_heap_attisnull(tup, attnum, tupledesc) \
+#define spk_heap_attisnull(tup, attnum, tupledesc) \
 	heap_attisnull(tup, attnum, tupledesc)
 
 /* deprecated in PG12, removed in PG13 */

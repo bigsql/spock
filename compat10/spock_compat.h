@@ -1,5 +1,5 @@
-#ifndef PG_LOGICAL_COMPAT_H
-#define PG_LOGICAL_COMPAT_H
+#ifndef SPOCK_COMPAT_H
+#define SPOCK_COMPAT_H
 
 #include "pgstat.h"
 #include "catalog/indexing.h"
@@ -8,7 +8,7 @@
 #include "replication/origin.h"
 #include "utils/varlena.h"
 
-#define PGLCreateTrigger CreateTrigger
+#define SPKCreateTrigger CreateTrigger
 
 #define WaitLatchOrSocket(latch, wakeEvents, sock, timeout) \
 	WaitLatchOrSocket(latch, wakeEvents, sock, timeout, PG_WAIT_EXTENSION)
@@ -18,7 +18,7 @@
 
 #define GetCurrentIntegerTimestamp() GetCurrentTimestamp()
 
-#define	PGLDoCopy(stmt, queryString, processed) DoCopy(NULL, stmt, -1, 0, processed)
+#define	SPKDoCopy(stmt, queryString, processed) DoCopy(NULL, stmt, -1, 0, processed)
 
 #define pg_analyze_and_rewrite(parsetree, query_string, paramTypes, numParams) \
 	pg_analyze_and_rewrite(parsetree, query_string, paramTypes, numParams, NULL)
@@ -32,7 +32,7 @@
 #define ExecAlterExtensionStmt(stmt) \
 	ExecAlterExtensionStmt(NULL, stmt)
 
-#define pgl_replorigin_drop(roident) \
+#define spk_replorigin_drop(roident) \
 	replorigin_drop(roident, true)
 
 #undef ExecEvalExpr
@@ -55,13 +55,13 @@
 
 #define makeDefElem(name, arg) makeDefElem(name, arg, -1)
 
-#define PGLstandard_ProcessUtility(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
+#define SPKstandard_ProcessUtility(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
 	standard_ProcessUtility(pstmt, queryString, context, params, queryEnv, dest, completionTag)
 
-#define PGLnext_ProcessUtility_hook(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
+#define SPKnext_ProcessUtility_hook(pstmt, queryString, context, params, queryEnv, dest, sentToRemote, completionTag) \
 	next_ProcessUtility_hook(pstmt, queryString, context, params, queryEnv, dest, completionTag)
 
-#define pgl_heap_attisnull(tup, attnum, tupledesc) \
+#define spk_heap_attisnull(tup, attnum, tupledesc) \
 	heap_attisnull(tup, attnum)
 
 #ifndef rbtxn_has_catalog_changes

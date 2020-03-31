@@ -1,12 +1,12 @@
 /*-------------------------------------------------------------------------
  *
- * pglogical_apply_heap.c
- * 		pglogical apply functions using heap api
+ * spock_apply_heap.c
+ * 		spock apply functions using heap api
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		  pglogical_apply_heap.c
+ *		  spock_apply_heap.c
  *
  *-------------------------------------------------------------------------
  */
@@ -61,17 +61,17 @@
 #include "utils/memutils.h"
 #include "utils/snapmgr.h"
 
-#include "pglogical_conflict.h"
-#include "pglogical_executor.h"
-#include "pglogical_node.h"
-#include "pglogical_proto_native.h"
-#include "pglogical_queue.h"
-#include "pglogical_relcache.h"
-#include "pglogical_repset.h"
-#include "pglogical_rpc.h"
-#include "pglogical_sync.h"
-#include "pglogical_worker.h"
-#include "pglogical_apply_heap.h"
+#include "spock_conflict.h"
+#include "spock_executor.h"
+#include "spock_node.h"
+#include "spock_proto_native.h"
+#include "spock_queue.h"
+#include "spock_relcache.h"
+#include "spock_repset.h"
+#include "spock_rpc.h"
+#include "spock_sync.h"
+#include "spock_worker.h"
+#include "spock_apply_heap.h"
 
 typedef struct ApplyExecState {
 	EState			   *estate;
@@ -83,7 +83,7 @@ typedef struct ApplyExecState {
 /* State related to bulk insert */
 typedef struct ApplyMIState
 {
-	PGLogicalRelation  *rel;
+	SpockRelation  *rel;
 	ApplyExecState	   *aestate;
 
 	CommandId			cid;
@@ -109,12 +109,12 @@ typedef struct ApplyMIState
 static ApplyMIState *pglmistate = NULL;
 
 void
-pglogical_apply_heap_begin(void)
+spock_apply_heap_begin(void)
 {
 }
 
 void
-pglogical_apply_heap_commit(void)
+spock_apply_heap_commit(void)
 {
 }
 
@@ -161,7 +161,7 @@ UserTableUpdateOpenIndexes(EState *estate, TupleTableSlot *slot)
 
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pglogical doesn't support deferrable indexes"),
+					 errmsg("spock doesn't support deferrable indexes"),
 					 errdetail("relation %s.%s has deferrable indexes: %s",
 								quote_identifier(nspname),
 								quote_identifier(relname),
@@ -175,7 +175,7 @@ UserTableUpdateOpenIndexes(EState *estate, TupleTableSlot *slot)
 }
 
 static bool
-physatt_in_attmap(PGLogicalRelation *rel, int attid)
+physatt_in_attmap(SpockRelation *rel, int attid)
 {
 	AttrNumber	i;
 
@@ -192,8 +192,8 @@ physatt_in_attmap(PGLogicalRelation *rel, int attid)
  * TODO: this needs caching, it's not exactly fast.
  */
 static void
-fill_missing_defaults(PGLogicalRelation *rel, EState *estate,
-					  PGLogicalTupleData *tuple)
+fill_missing_defaults(SpockRelation *rel, EState *estate,
+					  SpockTupleData *tuple)
 {
 	TupleDesc	desc = RelationGetDescr(rel->rel);
 	AttrNumber	num_phys_attrs = desc->natts;
@@ -246,7 +246,7 @@ fill_missing_defaults(PGLogicalRelation *rel, EState *estate,
 }
 
 static ApplyExecState *
-init_apply_exec_state(PGLogicalRelation *rel)
+init_apply_exec_state(SpockRelation *rel)
 {
 	ApplyExecState	   *aestate = palloc0(sizeof(ApplyExecState));
 
@@ -292,14 +292,14 @@ finish_apply_exec_state(ApplyExecState *aestate)
  * Handle insert via low level api.
  */
 void
-pglogical_apply_heap_insert(PGLogicalRelation *rel, PGLogicalTupleData *newtup)
+spock_apply_heap_insert(SpockRelation *rel, SpockTupleData *newtup)
 {
 	ApplyExecState	   *aestate;
 	Oid					conflicts_idx_id;
 	TupleTableSlot	   *localslot;
 	HeapTuple			remotetuple;
 	HeapTuple			applytuple;
-	PGLogicalConflictResolution resolution;
+	SpockConflictResolution resolution;
 	List			   *recheckIndexes = NIL;
 	MemoryContext		oldctx;
 	bool				has_before_triggers = false;
@@ -327,7 +327,7 @@ pglogical_apply_heap_insert(PGLogicalRelation *rel, PGLogicalTupleData *newtup)
 	 * only normal columns. This doesn't just check the replica identity index,
 	 * but it'll prefer it and use it first.
 	 */
-	conflicts_idx_id = pglogical_tuple_find_conflict(aestate->estate,
+	conflicts_idx_id = spock_tuple_find_conflict(aestate->estate,
 													 newtup,
 													 localslot);
 
@@ -387,7 +387,7 @@ pglogical_apply_heap_insert(PGLogicalRelation *rel, PGLogicalTupleData *newtup)
 									 remotetuple, &applytuple,
 									 &resolution);
 
-		pglogical_report_conflict(CONFLICT_INSERT_INSERT, rel,
+		spock_report_conflict(CONFLICT_INSERT_INSERT, rel,
 								  TTS_TUP(localslot), NULL, remotetuple,
 								  applytuple, resolution, xmin,
 								  local_origin_found, local_origin,
@@ -505,8 +505,8 @@ pglogical_apply_heap_insert(PGLogicalRelation *rel, PGLogicalTupleData *newtup)
  * Handle update via low level api.
  */
 void
-pglogical_apply_heap_update(PGLogicalRelation *rel, PGLogicalTupleData *oldtup,
-							PGLogicalTupleData *newtup)
+spock_apply_heap_update(SpockRelation *rel, SpockTupleData *oldtup,
+							SpockTupleData *newtup)
 {
 	ApplyExecState	   *aestate;
 	bool				found;
@@ -529,7 +529,7 @@ pglogical_apply_heap_update(PGLogicalRelation *rel, PGLogicalTupleData *oldtup,
 	PushActiveSnapshot(GetTransactionSnapshot());
 
 	/* Search for existing tuple with same key */
-	found = pglogical_tuple_find_replidx(aestate->estate, oldtup, localslot,
+	found = spock_tuple_find_replidx(aestate->estate, oldtup, localslot,
 										 &replident_idx_id);
 
 	/*
@@ -602,13 +602,13 @@ pglogical_apply_heap_update(PGLogicalRelation *rel, PGLogicalTupleData *oldtup,
 			xmin != GetTopTransactionId() &&
 			local_origin != replorigin_session_origin)
 		{
-			PGLogicalConflictResolution resolution;
+			SpockConflictResolution resolution;
 
 			apply = try_resolve_conflict(rel->rel, TTS_TUP(localslot),
 										 remotetuple, &applytuple,
 										 &resolution);
 
-			pglogical_report_conflict(CONFLICT_UPDATE_UPDATE, rel,
+			spock_report_conflict(CONFLICT_UPDATE_UPDATE, rel,
 									  TTS_TUP(localslot), oldtup,
 									  remotetuple, applytuple, resolution,
 									  xmin, local_origin_found, local_origin,
@@ -681,8 +681,8 @@ pglogical_apply_heap_update(PGLogicalRelation *rel, PGLogicalTupleData *oldtup,
 		remotetuple = heap_form_tuple(RelationGetDescr(rel->rel),
 									  newtup->values,
 									  newtup->nulls);
-		pglogical_report_conflict(CONFLICT_UPDATE_DELETE, rel, NULL, oldtup,
-								  remotetuple, NULL, PGLogicalResolution_Skip,
+		spock_report_conflict(CONFLICT_UPDATE_DELETE, rel, NULL, oldtup,
+								  remotetuple, NULL, SpockResolution_Skip,
 								  InvalidTransactionId, false,
 								  InvalidRepOriginId, (TimestampTz)0,
 								  replident_idx_id, has_before_triggers);
@@ -699,7 +699,7 @@ pglogical_apply_heap_update(PGLogicalRelation *rel, PGLogicalTupleData *oldtup,
  * Handle delete via low level api.
  */
 void
-pglogical_apply_heap_delete(PGLogicalRelation *rel, PGLogicalTupleData *oldtup)
+spock_apply_heap_delete(SpockRelation *rel, SpockTupleData *oldtup)
 {
 	ApplyExecState	   *aestate;
 	TupleTableSlot	   *localslot;
@@ -717,7 +717,7 @@ pglogical_apply_heap_delete(PGLogicalRelation *rel, PGLogicalTupleData *oldtup)
 
 	PushActiveSnapshot(GetTransactionSnapshot());
 
-	if (pglogical_tuple_find_replidx(aestate->estate, oldtup, localslot,
+	if (spock_tuple_find_replidx(aestate->estate, oldtup, localslot,
 									 &replident_idx_id))
 	{
 		if (aestate->resultRelInfo->ri_TrigDesc &&
@@ -735,7 +735,7 @@ pglogical_apply_heap_delete(PGLogicalRelation *rel, PGLogicalTupleData *oldtup)
 			{
 				PopActiveSnapshot();
 				finish_apply_exec_state(aestate);
-				pglogical_relation_close(rel, NoLock);
+				spock_relation_close(rel, NoLock);
 				return;
 			}
 		}
@@ -752,8 +752,8 @@ pglogical_apply_heap_delete(PGLogicalRelation *rel, PGLogicalTupleData *oldtup)
 		/* The tuple to be deleted could not be found. */
 		HeapTuple remotetuple = heap_form_tuple(RelationGetDescr(rel->rel),
 												oldtup->values, oldtup->nulls);
-		pglogical_report_conflict(CONFLICT_DELETE_DELETE, rel, NULL, oldtup,
-								  remotetuple, NULL, PGLogicalResolution_Skip,
+		spock_report_conflict(CONFLICT_DELETE_DELETE, rel, NULL, oldtup,
+								  remotetuple, NULL, SpockResolution_Skip,
 								  InvalidTransactionId, false,
 								  InvalidRepOriginId, (TimestampTz)0,
 								  replident_idx_id, has_before_triggers);
@@ -768,17 +768,17 @@ pglogical_apply_heap_delete(PGLogicalRelation *rel, PGLogicalTupleData *oldtup)
 
 
 bool
-pglogical_apply_heap_can_mi(PGLogicalRelation *rel)
+spock_apply_heap_can_mi(SpockRelation *rel)
 {
 	/* Multi insert is only supported when conflicts result in errors. */
-	return pglogical_conflict_resolver == PGLOGICAL_RESOLVE_ERROR;
+	return spock_conflict_resolver == SPOCK_RESOLVE_ERROR;
 }
 
 /*
  * MultiInsert initialization.
  */
 static void
-pglogical_apply_heap_mi_start(PGLogicalRelation *rel)
+spock_apply_heap_mi_start(SpockRelation *rel)
 {
 	MemoryContext	oldctx;
 	ApplyExecState *aestate;
@@ -790,7 +790,7 @@ pglogical_apply_heap_mi_start(PGLogicalRelation *rel)
 		return;
 
 	if (pglmistate && pglmistate->rel != rel)
-		pglogical_apply_heap_mi_finish(pglmistate->rel);
+		spock_apply_heap_mi_finish(pglmistate->rel);
 
 	oldctx = MemoryContextSwitchTo(TopTransactionContext);
 
@@ -869,7 +869,7 @@ pglogical_apply_heap_mi_start(PGLogicalRelation *rel)
 
 /* Write the buffered tuples. */
 static void
-pglogical_apply_heap_mi_flush(void)
+spock_apply_heap_mi_flush(void)
 {
 	MemoryContext	oldctx;
 	ResultRelInfo  *resultRelInfo;
@@ -944,21 +944,21 @@ pglogical_apply_heap_mi_flush(void)
 
 /* Add tuple to the MultiInsert. */
 void
-pglogical_apply_heap_mi_add_tuple(PGLogicalRelation *rel,
-								  PGLogicalTupleData *tup)
+spock_apply_heap_mi_add_tuple(SpockRelation *rel,
+								  SpockTupleData *tup)
 {
 	MemoryContext	oldctx;
 	ApplyExecState *aestate;
 	HeapTuple		remotetuple;
 	TupleTableSlot *slot;
 
-	pglogical_apply_heap_mi_start(rel);
+	spock_apply_heap_mi_start(rel);
 
 	/*
 	 * If sufficient work is pending, process that first
 	 */
 	if (pglmistate->nbuffered_tuples >= pglmistate->maxbuffered_tuples)
-		pglogical_apply_heap_mi_flush();
+		spock_apply_heap_mi_flush();
 
 	/* Process and store remote tuple in the slot */
 	aestate = pglmistate->aestate;
@@ -1022,14 +1022,14 @@ pglogical_apply_heap_mi_add_tuple(PGLogicalRelation *rel,
 }
 
 void
-pglogical_apply_heap_mi_finish(PGLogicalRelation *rel)
+spock_apply_heap_mi_finish(SpockRelation *rel)
 {
 	if (!pglmistate)
 		return;
 
 	Assert(pglmistate->rel == rel);
 
-	pglogical_apply_heap_mi_flush();
+	spock_apply_heap_mi_flush();
 
 	FreeBulkInsertState(pglmistate->bistate);
 

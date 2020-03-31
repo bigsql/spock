@@ -1,12 +1,12 @@
 /*-------------------------------------------------------------------------
  *
- * pglogical_conflict.c
+ * spock_conflict.c
  * 		Functions for detecting and handling conflicts
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		  pglogical_conflict.c
+ *		  spock_conflict.c
  *
  *-------------------------------------------------------------------------
  */
@@ -45,11 +45,11 @@
 #endif
 #include "utils/typcache.h"
 
-#include "pglogical_conflict.h"
-#include "pglogical_proto_native.h"
+#include "spock_conflict.h"
+#include "spock_proto_native.h"
 
-int		pglogical_conflict_resolver = PGLOGICAL_RESOLVE_APPLY_REMOTE;
-int		pglogical_conflict_log_level = LOG;
+int		spock_conflict_resolver = SPOCK_RESOLVE_APPLY_REMOTE;
+int		spock_conflict_log_level = LOG;
 
 static void tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc,
 	HeapTuple tuple);
@@ -62,7 +62,7 @@ static void tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc,
  * indexed field.
  */
 static bool
-build_index_scan_key(ScanKey skey, Relation rel, Relation idxrel, PGLogicalTupleData *tup)
+build_index_scan_key(ScanKey skey, Relation rel, Relation idxrel, SpockTupleData *tup)
 {
 	int			attoff;
 	Datum		indclassDatum;
@@ -268,7 +268,7 @@ retry:
  * The index oid is also output.
  */
 bool
-pglogical_tuple_find_replidx(EState *estate, PGLogicalTupleData *tuple,
+spock_tuple_find_replidx(EState *estate, SpockTupleData *tuple,
 							 TupleTableSlot *oldslot, Oid *idxrelid)
 {
 	ResultRelInfo  *relinfo = estate->es_result_relation_info;
@@ -316,11 +316,11 @@ pglogical_tuple_find_replidx(EState *estate, PGLogicalTupleData *tuple,
  * index, then a second conflict using a different index.
  *
  * We should really respect the replica identity more (i.e. use
- * pglogical_tuple_find_replidx). Or at least raise a WARNING that an
+ * spock_tuple_find_replidx). Or at least raise a WARNING that an
  * inconsistency may arise.
  */
 Oid
-pglogical_tuple_find_conflict(EState *estate, PGLogicalTupleData *tuple,
+spock_tuple_find_conflict(EState *estate, SpockTupleData *tuple,
 							  TupleTableSlot *outslot)
 {
 	Oid				conflict_idx = InvalidOid;
@@ -337,7 +337,7 @@ pglogical_tuple_find_conflict(EState *estate, PGLogicalTupleData *tuple,
 
 	/*
 	 * Check the replica identity index with a SnapshotDirty scan first, like
-	 * pglogical_tuple_find_replidx, but without ERRORing if we don't find
+	 * spock_tuple_find_replidx, but without ERRORing if we don't find
 	 * a replica identity index.
 	 */
 	replidxoid = RelationGetReplicaIndex(relinfo->ri_RelationDesc);
@@ -434,7 +434,7 @@ conflict_resolve_by_timestamp(RepOriginId local_origin_id,
 							  TimestampTz local_ts,
 							  TimestampTz remote_ts,
 							  bool last_update_wins,
-							  PGLogicalConflictResolution *resolution)
+							  SpockConflictResolution *resolution)
 {
 	int			cmp;
 
@@ -451,13 +451,13 @@ conflict_resolve_by_timestamp(RepOriginId local_origin_id,
 	if (cmp > 0)
 	{
 		/* The remote row wins, update the local one. */
-		*resolution = PGLogicalResolution_ApplyRemote;
+		*resolution = SpockResolution_ApplyRemote;
 		return true;
 	}
 	else if (cmp < 0)
 	{
 		/* The local row wins, retain it */
-		*resolution = PGLogicalResolution_KeepLocal;
+		*resolution = SpockResolution_KeepLocal;
 		return false;
 	}
 	else
@@ -469,7 +469,7 @@ conflict_resolve_by_timestamp(RepOriginId local_origin_id,
 		 * XXX: TODO, for now we just always apply remote change.
 		 */
 
-		*resolution = PGLogicalResolution_ApplyRemote;
+		*resolution = SpockResolution_ApplyRemote;
 		return true;
 	}
 }
@@ -528,28 +528,28 @@ get_tuple_origin(HeapTuple local_tuple, TransactionId *xmin,
 bool
 try_resolve_conflict(Relation rel, HeapTuple localtuple, HeapTuple remotetuple,
 					 HeapTuple *resulttuple,
-					 PGLogicalConflictResolution *resolution)
+					 SpockConflictResolution *resolution)
 {
 	TransactionId	xmin;
 	TimestampTz		local_ts;
 	RepOriginId		local_origin;
 	bool			apply = false;
 
-	switch (pglogical_conflict_resolver)
+	switch (spock_conflict_resolver)
 	{
-		case PGLOGICAL_RESOLVE_ERROR:
+		case SPOCK_RESOLVE_ERROR:
 			/* TODO: proper error message */
 			elog(ERROR, "cannot apply conflicting row");
 			break;
-		case PGLOGICAL_RESOLVE_APPLY_REMOTE:
+		case SPOCK_RESOLVE_APPLY_REMOTE:
 			apply = true;
-			*resolution = PGLogicalResolution_ApplyRemote;
+			*resolution = SpockResolution_ApplyRemote;
 			break;
-		case PGLOGICAL_RESOLVE_KEEP_LOCAL:
+		case SPOCK_RESOLVE_KEEP_LOCAL:
 			apply = false;
-			*resolution = PGLogicalResolution_KeepLocal;
+			*resolution = SpockResolution_KeepLocal;
 			break;
-		case PGLOGICAL_RESOLVE_LAST_UPDATE_WINS:
+		case SPOCK_RESOLVE_LAST_UPDATE_WINS:
 			get_tuple_origin(localtuple, &xmin, &local_origin, &local_ts);
 			apply = conflict_resolve_by_timestamp(local_origin,
 												  replorigin_session_origin,
@@ -557,7 +557,7 @@ try_resolve_conflict(Relation rel, HeapTuple localtuple, HeapTuple remotetuple,
 												  replorigin_session_origin_timestamp,
 												  true, resolution);
 			break;
-		case PGLOGICAL_RESOLVE_FIRST_UPDATE_WINS:
+		case SPOCK_RESOLVE_FIRST_UPDATE_WINS:
 			get_tuple_origin(localtuple, &xmin, &local_origin, &local_ts);
 			apply = conflict_resolve_by_timestamp(local_origin,
 												  replorigin_session_origin,
@@ -566,8 +566,8 @@ try_resolve_conflict(Relation rel, HeapTuple localtuple, HeapTuple remotetuple,
 												  false, resolution);
 			break;
 		default:
-			elog(ERROR, "unrecognized pglogical_conflict_resolver setting %d",
-				 pglogical_conflict_resolver);
+			elog(ERROR, "unrecognized spock_conflict_resolver setting %d",
+				 spock_conflict_resolver);
 	}
 
 	if (apply)
@@ -580,7 +580,7 @@ try_resolve_conflict(Relation rel, HeapTuple localtuple, HeapTuple remotetuple,
 
 #if 0
 static char *
-conflict_type_to_string(PGLogicalConflictType conflict_type)
+conflict_type_to_string(SpockConflictType conflict_type)
 {
 	switch (conflict_type)
 	{
@@ -600,15 +600,15 @@ conflict_type_to_string(PGLogicalConflictType conflict_type)
 #endif
 
 static char *
-conflict_resolution_to_string(PGLogicalConflictResolution resolution)
+conflict_resolution_to_string(SpockConflictResolution resolution)
 {
 	switch (resolution)
 	{
-		case PGLogicalResolution_ApplyRemote:
+		case SpockResolution_ApplyRemote:
 			return "apply_remote";
-		case PGLogicalResolution_KeepLocal:
+		case SpockResolution_KeepLocal:
 			return "keep_local";
-		case PGLogicalResolution_Skip:
+		case SpockResolution_Skip:
 			return "skip";
 	}
 
@@ -624,7 +624,7 @@ conflict_resolution_to_string(PGLogicalConflictResolution resolution)
  * - The local tuple we conflict with or NULL if not found [localtuple];
  *
  * - If the remote tuple was an update, the key of the old tuple
- *   as a PGLogicalTuple [oldkey]
+ *   as a SpockTuple [oldkey]
  *
  * - The remote tuple, after we fill any defaults and apply any local
  *   BEFORE triggers but before conflict resolution [remotetuple];
@@ -632,20 +632,20 @@ conflict_resolution_to_string(PGLogicalConflictResolution resolution)
  * - The tuple we'll actually apply if any, after conflict resolution
  *   [applytuple]
  *
- * The PGLogicalRelation's name info is for the remote rel. If we add relation
+ * The SpockRelation's name info is for the remote rel. If we add relation
  * mapping we'll need to get the name/namespace of the local relation too.
  *
  * This runs in MessageContext so we don't have to worry about leaks, but
  * we still try to free the big chunks as we go.
  */
 void
-pglogical_report_conflict(PGLogicalConflictType conflict_type,
-						  PGLogicalRelation *rel,
+spock_report_conflict(SpockConflictType conflict_type,
+						  SpockRelation *rel,
 						  HeapTuple localtuple,
-						  PGLogicalTupleData *oldkey,
+						  SpockTupleData *oldkey,
 						  HeapTuple remotetuple,
 						  HeapTuple applytuple,
-						  PGLogicalConflictResolution resolution,
+						  SpockConflictResolution resolution,
 						  TransactionId local_tuple_xid,
 						  bool found_local_origin,
 						  RepOriginId local_tuple_origin,
@@ -695,7 +695,7 @@ pglogical_report_conflict(PGLogicalConflictType conflict_type,
 	{
 		case CONFLICT_INSERT_INSERT:
 		case CONFLICT_UPDATE_UPDATE:
-			ereport(pglogical_conflict_log_level,
+			ereport(spock_conflict_log_level,
 					(errcode(ERRCODE_INTEGRITY_CONSTRAINT_VIOLATION),
 					 errmsg("CONFLICT: remote %s on relation %s (local index %s). Resolution: %s.",
 							conflict_type == CONFLICT_INSERT_INSERT ? "INSERT" : "UPDATE",
@@ -713,7 +713,7 @@ pglogical_report_conflict(PGLogicalConflictType conflict_type,
 			break;
 		case CONFLICT_UPDATE_DELETE:
 		case CONFLICT_DELETE_DELETE:
-			ereport(pglogical_conflict_log_level,
+			ereport(spock_conflict_log_level,
 					(errcode(ERRCODE_INTEGRITY_CONSTRAINT_VIOLATION),
 					 errmsg("CONFLICT: remote %s on relation %s replica identity index %s (tuple not found). Resolution: %s.",
 							conflict_type == CONFLICT_UPDATE_DELETE ? "UPDATE" : "DELETE",
@@ -729,19 +729,19 @@ pglogical_report_conflict(PGLogicalConflictType conflict_type,
 	}
 }
 
-/* Checks validity of pglogical_conflict_resolver GUC */
+/* Checks validity of spock_conflict_resolver GUC */
 bool
-pglogical_conflict_resolver_check_hook(int *newval, void **extra,
+spock_conflict_resolver_check_hook(int *newval, void **extra,
 									   GucSource source)
 {
 	/*
-	 * Only allow PGLOGICAL_RESOLVE_APPLY_REMOTE when track_commit_timestamp
+	 * Only allow SPOCK_RESOLVE_APPLY_REMOTE when track_commit_timestamp
 	 * is off, because there is no way to know where the local tuple
 	 * originated from.
 	 */
 	if (!track_commit_timestamp &&
-		*newval != PGLOGICAL_RESOLVE_APPLY_REMOTE &&
-		*newval != PGLOGICAL_RESOLVE_ERROR)
+		*newval != SPOCK_RESOLVE_APPLY_REMOTE &&
+		*newval != SPOCK_RESOLVE_ERROR)
 	{
 		GUC_check_errdetail("track_commit_timestamp is off");
 		return false;

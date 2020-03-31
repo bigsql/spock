@@ -1,12 +1,12 @@
 /*-------------------------------------------------------------------------
  *
- * pglogical_manager.c
- * 		pglogical worker for managing apply workers in a database
+ * spock_manager.c
+ * 		spock worker for managing apply workers in a database
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		  pglogical_manager.c
+ *		  spock_manager.c
  *
  *-------------------------------------------------------------------------
  */
@@ -32,9 +32,9 @@
 #include "utils/lsyscache.h"
 #include "utils/rel.h"
 
-#include "pglogical.h"
-#include "pglogical_queue.h"
-#include "pglogical_repset.h"
+#include "spock.h"
+#include "spock_queue.h"
+#include "spock_repset.h"
 
 #define CATALOG_SEQUENCE_STATE			"sequence_state"
 
@@ -91,7 +91,7 @@ synchronize_sequences(void)
 	Relation		rel;
 	SysScanDesc		scan;
 	HeapTuple		tuple;
-	PGLogicalLocalNode	   *local_node;
+	SpockLocalNode	   *local_node;
 	bool			ret = true;
 
 	StartTransactionCommand();
@@ -152,7 +152,7 @@ synchronize_sequences(void)
 		 * per node/replication set. And here we sync one oid at once.
 		 * Still a sequence can have distinct targets on distinct repset
 		 * so we need to figure that here.  See
-		 * pglogical.replication_set_seq CONSTRAINTS
+		 * spock.replication_set_seq CONSTRAINTS
 		 */
 		foreach (lc, seqtargets)
 		{
@@ -160,7 +160,7 @@ synchronize_sequences(void)
 			List		*repset_names = NIL;
 			char		*nspname;
 			char		*relname;
-			PGLogicalRepSetSeq *t = (PGLogicalRepSetSeq *) lfirst(lc);
+			SpockRepSetSeq *t = (SpockRepSetSeq *) lfirst(lc);
 			nspname = pstrdup(t->nsptarget);
 			relname = pstrdup(t->seqtarget);
 			repset_names = lappend(repset_names, pstrdup(t->repset_name));
@@ -205,7 +205,7 @@ synchronize_sequence(Oid seqoid)
 	HeapTuple		newtup;
 	List		   *seqtargets;
 	ListCell	   *lc;
-	PGLogicalLocalNode	   *local_node = get_local_node(true, false);
+	SpockLocalNode	   *local_node = get_local_node(true, false);
 
 	/* Check if the oid points to actual sequence. */
 	seqrel = table_open(seqoid, AccessShareLock);
@@ -255,7 +255,7 @@ synchronize_sequence(Oid seqoid)
 			List		*repset_names = NIL;
 			char		*nspname;
 			char		*relname;
-			PGLogicalRepSetSeq *t = (PGLogicalRepSetSeq *) lfirst(lc);
+			SpockRepSetSeq *t = (SpockRepSetSeq *) lfirst(lc);
 			nspname = pstrdup(t->nsptarget);
 			relname = pstrdup(t->seqtarget);
 			repset_names = lappend(repset_names, pstrdup(t->repset_name));
@@ -283,7 +283,7 @@ synchronize_sequence(Oid seqoid)
  * Makes sure there is sequence state record for given sequence.
  */
 void
-pglogical_create_sequence_state_record(Oid seqoid)
+spock_create_sequence_state_record(Oid seqoid)
 {
 	RangeVar	   *rv;
 	Relation		rel;
@@ -337,7 +337,7 @@ pglogical_create_sequence_state_record(Oid seqoid)
  * Makes sure there isn't sequence state record for given sequence.
  */
 void
-pglogical_drop_sequence_state_record(Oid seqoid)
+spock_drop_sequence_state_record(Oid seqoid)
 {
 	RangeVar	   *rv;
 	Relation		rel;

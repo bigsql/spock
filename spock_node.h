@@ -1,81 +1,81 @@
 /*-------------------------------------------------------------------------
  *
- * pglogical_node.h
- *		pglogical node and connection catalog manipulation functions
+ * spock_node.h
+ *		spock node and connection catalog manipulation functions
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		pglogical_node.h
+ *		spock_node.h
  *
  *-------------------------------------------------------------------------
  */
-#ifndef PGLOGICAL_NODE_H
-#define PGLOGICAL_NODE_H
+#ifndef SPOCK_NODE_H
+#define SPOCK_NODE_H
 
 #include "datatype/timestamp.h"
 
-typedef struct PGLogicalNode
+typedef struct SpockNode
 {
 	Oid			id;
 	char	   *name;
-} PGLogicalNode;
+} SpockNode;
 
-typedef struct PGlogicalInterface
+typedef struct SpockInterface
 {
 	Oid				id;
 	const char	   *name;
 	Oid				nodeid;
 	const char	   *dsn;
-} PGlogicalInterface;
+} SpockInterface;
 
-typedef struct PGLogicalLocalNode
+typedef struct SpockLocalNode
 {
-	PGLogicalNode	*node;
-	PGlogicalInterface *node_if;
-} PGLogicalLocalNode;
+	SpockNode	*node;
+	SpockInterface *node_if;
+} SpockLocalNode;
 
-typedef struct PGLogicalSubscription
+typedef struct SpockSubscription
 {
 	Oid			id;
 	char	   *name;
-	PGLogicalNode	   *origin;
-   	PGLogicalNode	   *target;
-	PGlogicalInterface *origin_if;
-	PGlogicalInterface *target_if;
+	SpockNode	   *origin;
+   	SpockNode	   *target;
+	SpockInterface *origin_if;
+	SpockInterface *target_if;
 	bool		enabled;
 	Interval   *apply_delay;
 	char	   *slot_name;
 	List	   *replication_sets;
 	List	   *forward_origins;
 	bool		force_text_transfer;
-} PGLogicalSubscription;
+} SpockSubscription;
 
-extern void create_node(PGLogicalNode *node);
+extern void create_node(SpockNode *node);
 extern void drop_node(Oid nodeid);
 
-extern PGLogicalNode *get_node(Oid nodeid);
-extern PGLogicalNode *get_node_by_name(const char *name, bool missing_ok);
+extern SpockNode *get_node(Oid nodeid);
+extern SpockNode *get_node_by_name(const char *name, bool missing_ok);
 
-extern void create_node_interface(PGlogicalInterface *node);
+extern void create_node_interface(SpockInterface *node);
 extern void drop_node_interface(Oid ifid);
 extern void drop_node_interfaces(Oid nodeid);
-extern PGlogicalInterface *get_node_interface(Oid ifid);
-extern PGlogicalInterface *get_node_interface_by_name(Oid nodeid,
+extern SpockInterface *get_node_interface(Oid ifid);
+extern SpockInterface *get_node_interface_by_name(Oid nodeid,
 													  const char *name,
 													  bool missing_ok);
 
 extern void create_local_node(Oid nodeid, Oid ifid);
 extern void drop_local_node(void);
-extern PGLogicalLocalNode *get_local_node(bool for_update, bool missing_ok);
+extern SpockLocalNode *get_local_node(bool for_update, bool missing_ok);
 
-extern void create_subscription(PGLogicalSubscription *sub);
-extern void alter_subscription(PGLogicalSubscription *sub);
+extern void create_subscription(SpockSubscription *sub);
+extern void alter_subscription(SpockSubscription *sub);
 extern void drop_subscription(Oid subid);
 
-extern PGLogicalSubscription *get_subscription(Oid subid);
-extern PGLogicalSubscription *get_subscription_by_name(const char *name,
+extern SpockSubscription *get_subscription(Oid subid);
+extern SpockSubscription *get_subscription_by_name(const char *name,
 													   bool missing_ok);
 extern List *get_node_subscriptions(Oid nodeid, bool origin);
 
-#endif /* PGLOGICAL_NODE_H */
+#endif /* SPOCK_NODE_H */

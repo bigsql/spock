@@ -9,17 +9,17 @@ MODULES = spock_output
 DATA = pglogical--2.2.2-spock--3.1.sql \
 	   spock--3.1.sql
 
-OBJS = pglogical_apply.o pglogical_conflict.o pglogical_manager.o \
-	   spock.o pglogical_node.o pglogical_relcache.o \
-	   pglogical_repset.o pglogical_rpc.o pglogical_functions.o \
-	   pglogical_queue.o pglogical_fe.o pglogical_worker.o \
-	   pglogical_sync.o pglogical_sequences.o pglogical_executor.o \
-	   pglogical_dependency.o pglogical_apply_heap.o pglogical_apply_spi.o \
-	   pglogical_output_config.o pglogical_output_plugin.o \
-	   pglogical_output_proto.o pglogical_proto_json.o \
-	   pglogical_proto_native.o pglogical_monitoring.o
+OBJS = spock_apply.o spock_conflict.o spock_manager.o \
+	   spock.o spock_node.o spock_relcache.o \
+	   spock_repset.o spock_rpc.o spock_functions.o \
+	   spock_queue.o spock_fe.o spock_worker.o \
+	   spock_sync.o spock_sequences.o spock_executor.o \
+	   spock_dependency.o spock_apply_heap.o spock_apply_spi.o \
+	   spock_output_config.o spock_output_plugin.o \
+	   spock_output_proto.o spock_proto_json.o \
+	   spock_proto_native.o spock_monitoring.o
 
-SCRIPTS_built = pglogical_create_subscriber
+SCRIPTS_built = spock_create_subscriber
 
 REGRESS = preseed infofuncs init_fail init preseed_check basic extended conflict_secondary_unique \
 		  toasted replication_set add_table relations_only matview bidirectional \
@@ -27,13 +27,13 @@ REGRESS = preseed infofuncs init_fail init preseed_check basic extended conflict
 		  row_filter_sampling att_list column_filter apply_delay multiple_upstreams \
 		  map node_origin_cascade drop
 
-EXTRA_CLEAN += compat96/pglogical_compat.o compat10/pglogical_compat.o \
-			   compat11/pglogical_compat.o compat12/pglogical_compat.o \
-			   pglogical_create_subscriber.o
+EXTRA_CLEAN += compat96/spock_compat.o compat10/spock_compat.o \
+			   compat11/spock_compat.o compat12/spock_compat.o \
+			   spock_create_subscriber.o
 
 # The # in #define is taken as a comment, per https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=142043
 # so it must be escaped. The $ placeholders in awk must be doubled too.
-pglogical_version=$(shell awk '/\#define PGLOGICAL_VERSION[ \t]+\".*\"/ { print substr($$3,2,length($$3)-2) }' $(realpath $(srcdir)/pglogical.h) )
+pglogical_version=$(shell awk '/\#define PGLOGICAL_VERSION[ \t]+\".*\"/ { print substr($$3,2,length($$3)-2) }' $(realpath $(srcdir)/spock.h) )
 
 # For regression checks
 # http://www.postgresql.org/message-id/CAB7nPqTsR5o3g-fBi6jbsVdhfPiLFWQ_0cGU5=94Rv_8W3qvFA@mail.gmail.com
@@ -48,7 +48,7 @@ PGVER := $(shell $(PG_CONFIG) --version | sed 's/[^0-9]//g' | cut -c 1-2)
 PG_CPPFLAGS += -I$(libpq_srcdir) -I$(realpath $(srcdir)/compat$(PGVER)) -Werror=implicit-function-declaration
 SHLIB_LINK += $(libpq)
 
-OBJS += $(srcdir)/compat$(PGVER)/pglogical_compat.o
+OBJS += $(srcdir)/compat$(PGVER)/spock_compat.o
 
 requires =
 control_path = $(abspath $(srcdir))/spock.control
@@ -82,11 +82,11 @@ regresscheck:
 
 check: install regresscheck
 
-pglogical_create_subscriber: pglogical_create_subscriber.o pglogical_fe.o
+spock_create_subscriber: spock_create_subscriber.o spock_fe.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LDFLAGS_EX) $(libpq_pgport) $(LIBS) -o $@$(X)
 
 
-spock.control: spock.control.in pglogical.h
+spock.control: spock.control.in spock.h
 	sed 's/__PGLOGICAL_VERSION__/$(pglogical_version)/;s/__REQUIRES__/$(requires)/' $(realpath $(srcdir)/spock.control.in) > $(control_path)
 
 all: spock.control
@@ -111,11 +111,11 @@ dist-common: clean
 	@md5sum "${distdir}.tar.bz2" > "${distdir}.tar.bz2.md5"
 	@if test -n "$(GPGSIGNKEYS)"; then gpg -q -a -b $(shell for x in $(GPGSIGNKEYS); do echo -u $$x; done) "${distdir}.tar.bz2"; else echo "No GPGSIGNKEYS passed, not signing tarball. Pass space separated keyid list as make var to sign."; fi
 
-dist: distdir=pglogical-$(pglogical_version)
+dist: distdir=spock-$(pglogical_version)
 dist: wanttag=1
 dist: dist-common
 
-git-dist: distdir=pglogical-$(pglogical_version)_git$(GITHASH)
+git-dist: distdir=spock-$(pglogical_version)_git$(GITHASH)
 git-dist: wanttag=0
 git-dist: dist-common
 
@@ -184,7 +184,7 @@ fi
 echo "Running $${NEXT_POSTGRES} under Valgrind"
 
 valgrind --leak-check=full --show-leak-kinds=definite,possible,reachable --gen-suppressions=all \
-	--suppressions="$${SUPP}" --suppressions=`pwd`/pglogical.supp --verbose \
+	--suppressions="$${SUPP}" --suppressions=`pwd`/spock.supp --verbose \
 	--time-stamp=yes  --log-file=valgrind-$$$$-%p.log --trace-children=yes \
 	--track-origins=yes --read-var-info=yes --malloc-fill=8f --free-fill=9f \
 	--num-callers=30 \

@@ -65,11 +65,7 @@
 
 #define CATALOG_LOCAL_SYNC_STATUS	"local_sync_status"
 
-#if PG_VERSION_NUM < 90500
-#define PGDUMP_BINARY "spock_dump"
-#else
 #define PGDUMP_BINARY "pg_dump"
-#endif
 #define PGRESTORE_BINARY "pg_restore"
 
 #define Natts_local_sync_state	6
@@ -144,11 +140,7 @@ dump_structure(SpockSubscription *sub, const char *destfile,
 	}
 
 	initStringInfo(&command);
-#if PG_VERSION_NUM >= 90600
 	appendStringInfo(&command, "\"%s\" --strict-names --snapshot=\"%s\" %s %s -s -F c -f \"%s\" \"%s\"",
-#else
-	appendStringInfo(&command, "\"%s\" --snapshot=\"%s\" %s %s -s -F c -f \"%s\" \"%s\"",
-#endif
 					 pg_dump, snapshot,
 					 schema_filter.data, table_filter.data,
 					 destfile, sub->origin_if->dsn);
@@ -324,14 +316,11 @@ start_copy_target_tx(PGconn *conn, const char *origin_name)
 	 * We must do this before starting the transaction otherwise the status
 	 * code bellow would get much more complicated.
 	 */
-	if (PQserverVersion(conn) >= 90500)
-	{
-		s = PQescapeLiteral(conn, origin_name, strlen(origin_name));
-		appendStringInfo(&query,
-						 "SELECT pg_catalog.pg_replication_origin_session_setup(%s);\n",
-						 s);
-		PQfreemem(s);
-	}
+	s = PQescapeLiteral(conn, origin_name, strlen(origin_name));
+	appendStringInfo(&query,
+					 "SELECT pg_catalog.pg_replication_origin_session_setup(%s);\n",
+					 s);
+	PQfreemem(s);
 
 	appendStringInfoString(&query, setup_query);
 
@@ -372,14 +361,11 @@ finish_copy_target_tx(PGconn *conn)
 	 * Resetting the origin explicitly before the backend exits will help
 	 * prevent races with other accesses to the same replication origin.
 	 */
-	if (PQserverVersion(conn) >= 90500)
-	{
-		res = PQexec(conn, "SELECT pg_catalog.pg_replication_origin_session_reset();\n");
-		if (PQresultStatus(res) != PGRES_TUPLES_OK)
-			elog(WARNING, "Resetting session origin on target node failed: %s",
-					PQresultErrorMessage(res));
-		PQclear(res);
-	}
+	res = PQexec(conn, "SELECT pg_catalog.pg_replication_origin_session_reset();\n");
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		elog(WARNING, "Resetting session origin on target node failed: %s",
+				PQresultErrorMessage(res));
+	PQclear(res);
 
 	PQfinish(conn);
 }
@@ -892,9 +878,7 @@ spock_sync_subscription(SpockSubscription *sub)
 			PG_ENSURE_ERROR_CLEANUP(spock_sync_tmpfile_cleanup_cb,
 									CStringGetDatum(tmpfile));
 			{
-#if PG_VERSION_NUM >= 90500
 				Relation replorigin_rel;
-#endif
 
 				StartTransactionCommand();
 
@@ -902,14 +886,10 @@ spock_sync_subscription(SpockSubscription *sub)
 				elog(DEBUG3, "advancing origin with oid %u for forwarded row to %X/%X during subscription sync",
 					originid,
 					(uint32)(XactLastCommitEnd>>32), (uint32)XactLastCommitEnd);
-#if PG_VERSION_NUM >= 90500
 				replorigin_rel = table_open(ReplicationOriginRelationId, RowExclusiveLock);
-#endif
 				replorigin_advance(originid, lsn, XactLastCommitEnd, true,
 								   true);
-#if PG_VERSION_NUM >= 90500
 				table_close(replorigin_rel, RowExclusiveLock);
-#endif
 
 				CommitTransactionCommand();
 
@@ -1074,9 +1054,7 @@ spock_sync_table(SpockSubscription *sub, RangeVar *table,
 	PG_ENSURE_ERROR_CLEANUP(spock_sync_worker_cleanup_error_cb,
 							PointerGetDatum(sub));
 	{
-#if PG_VERSION_NUM >= 90500
 		Relation replorigin_rel;
-#endif
 
 		StartTransactionCommand();
 		originid = ensure_replication_origin(sub->slot_name);
@@ -1084,14 +1062,10 @@ spock_sync_table(SpockSubscription *sub, RangeVar *table,
 			MySubscription->slot_name, originid,
 			(uint32)(XactLastCommitEnd>>32), (uint32)XactLastCommitEnd);
 
-#if PG_VERSION_NUM >= 90500
 		replorigin_rel = table_open(ReplicationOriginRelationId, RowExclusiveLock);
-#endif
 		replorigin_advance(originid, *status_lsn, XactLastCommitEnd, true,
 						   true);
-#if PG_VERSION_NUM >= 90500
 		table_close(replorigin_rel, RowExclusiveLock);
-#endif
 
 		set_table_sync_status(sub->id, table->schemaname, table->relname,
 							  SYNC_STATUS_DATA, *status_lsn);

@@ -461,9 +461,7 @@ findDependentObjects(const ObjectAddress *object,
 		{
 			case DEPENDENCY_NORMAL:
 			case DEPENDENCY_AUTO:
-#if PG_VERSION_NUM >= 90600
 			case DEPENDENCY_AUTO_EXTENSION:
-#endif
 				/* no problem */
 				break;
 #if PG_VERSION_NUM >= 110000 && PG_VERSION_NUM < 120000
@@ -1213,7 +1211,6 @@ find_expr_references_walker(Node *node,
 										   context->addrs);
 					break;
 
-#if PG_VERSION_NUM >= 90500
 				case REGNAMESPACEOID:
 					objoid = DatumGetObjectId(con->constvalue);
 					if (SearchSysCacheExists1(NAMESPACEOID,
@@ -1231,7 +1228,6 @@ find_expr_references_walker(Node *node,
 							(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 							 errmsg("constant of the type \"regrole\" cannot be used here")));
 					break;
-#endif
 			}
 		}
 		return false;
@@ -1452,7 +1448,6 @@ find_expr_references_walker(Node *node,
 		add_object_address(OCLASS_TYPE, cd->resulttype, 0,
 						   context->addrs);
 	}
-#if PG_VERSION_NUM >= 90500
 	else if (IsA(node, OnConflictExpr))
 	{
 		OnConflictExpr *onconflict = (OnConflictExpr *) node;
@@ -1462,7 +1457,6 @@ find_expr_references_walker(Node *node,
 							   context->addrs);
 		/* fall through to examine arguments */
 	}
-#endif
 	else if (IsA(node, SortGroupClause))
 	{
 		SortGroupClause *sgc = (SortGroupClause *) node;
@@ -1615,7 +1609,6 @@ find_expr_references_walker(Node *node,
 								   context->addrs);
 		}
 	}
-#if PG_VERSION_NUM >= 90500
 	else if (IsA(node, TableSampleClause))
 	{
 		TableSampleClause *tsc = (TableSampleClause *) node;
@@ -1624,7 +1617,6 @@ find_expr_references_walker(Node *node,
 						   context->addrs);
 		/* fall through to examine arguments */
 	}
-#endif
 
 	return expression_tree_walker(node, find_expr_references_walker,
 								  (void *) context);

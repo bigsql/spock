@@ -193,8 +193,8 @@ pg_decode_startup(LogicalDecodingContext * ctx, OutputPluginOptions *opt,
 		MemoryContext oldctx;
 
 		/*
-		 * There's a potential corruption bug in PostgreSQL 10.1, 9.6.6, 9.5.10
-		 * and 9.4.15 that can cause reorder buffers to accumulate duplicated
+		 * There's a potential corruption bug in PostgreSQL 10.1,
+		 * that can cause reorder buffers to accumulate duplicated
 		 * transactions. See
 		 *   https://www.postgresql.org/message-id/CAMsr+YHdX=XECbZshDZ2CZNWGTyw-taYBnzqVfx4JzM4ExP5xg@mail.gmail.com
 		 *
@@ -356,16 +356,7 @@ pg_decode_startup(LogicalDecodingContext * ctx, OutputPluginOptions *opt,
 			data->allow_binary_basetypes = true;
 		}
 
-		/*
-		 * 9.4 lacks origins info so don't forward it.
-		 *
-		 * There's currently no knob for clients to use to suppress
-		 * this info and it's sent if it's supported and available.
-		 */
-		if (PG_VERSION_NUM/100 == 904)
-			data->forward_changeset_origins = false;
-		else
-			data->forward_changeset_origins = true;
+		data->forward_changeset_origins = true;
 
 		if (started_tx)
 			CommitTransactionCommand();
@@ -890,12 +881,7 @@ relmetacache_init(MemoryContext decoding_context)
 		ctl.entrysize = sizeof(struct SPKRelMetaCacheEntry);
 		ctl.hcxt = RelMetaCacheContext;
 
-#if PG_VERSION_NUM >= 90500
 		hash_flags |= HASH_BLOBS;
-#else
-		ctl.hash = tag_hash;
-		hash_flags |= HASH_FUNCTION;
-#endif
 
 		old_ctxt = MemoryContextSwitchTo(RelMetaCacheContext);
 		RelMetaCache = hash_create("spock relation metadata cache",

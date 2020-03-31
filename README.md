@@ -1,7 +1,7 @@
 # spock
 
 "bigsql/spock" is a fork of the "2ndquadrant/pglogical" project.  Spock supports bi-directional
-replication with conflict resolution for PG 9.6+.
+replication with conflict resolution for PG 10+.
 
 Spock provides logical streaming replication for PostgreSQL,
 using a publish/subscribe model. It works on a per database level, not whole server level
@@ -36,7 +36,7 @@ We use the following terms to describe data streams between nodes:
 
 ## Requirements
 
-To use spock the provider and subscriber must be running PostgreSQL 9.6 or newer.
+To use spock the provider and subscriber must be running PostgreSQL 10 or newer.
 
 The `spock` extension must be installed on both provider and subscriber.
 You must `CREATE EXTENSION spock` on both.

@@ -27,7 +27,7 @@ REGRESS = preseed infofuncs init_fail init preseed_check basic extended conflict
 		  row_filter_sampling att_list column_filter apply_delay multiple_upstreams \
 		  map node_origin_cascade drop
 
-EXTRA_CLEAN += compat96/spock_compat.o compat10/spock_compat.o \
+EXTRA_CLEAN += compat10/spock_compat.o \
 			   compat11/spock_compat.o compat12/spock_compat.o \
 			   spock_create_subscriber.o
 

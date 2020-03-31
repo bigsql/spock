@@ -131,9 +131,7 @@ UserTableUpdateOpenIndexes(EState *estate, TupleTableSlot *slot)
 											   &slot->tts_tuple->t_self,
 #endif
 											   estate
-#if PG_VERSION_NUM >= 90500
 											   , false, NULL, NIL
-#endif
 											   );
 
 		/* FIXME: recheck the indexes */
@@ -317,9 +315,7 @@ spock_apply_heap_insert(SpockRelation *rel, SpockTupleData *newtup)
 	PushActiveSnapshot(GetTransactionSnapshot());
 
 	ExecOpenIndices(aestate->resultRelInfo
-#if PG_VERSION_NUM >= 90500
 					, false
-#endif
 					);
 
 	/*
@@ -651,9 +647,7 @@ spock_apply_heap_update(SpockRelation *rel, SpockTupleData *oldtup,
 #endif
 			{
 				ExecOpenIndices(aestate->resultRelInfo
-#if PG_VERSION_NUM >= 90500
 								, false
-#endif
 							   );
 				recheckIndexes = UserTableUpdateOpenIndexes(aestate->estate,
 															aestate->slot);
@@ -805,9 +799,7 @@ spock_apply_heap_mi_start(SpockRelation *rel)
 	resultRelInfo = aestate->resultRelInfo;
 
 	ExecOpenIndices(resultRelInfo
-#if PG_VERSION_NUM >= 90500
 					, false
-#endif
 					);
 
 	/* Check if table has any volatile default expressions. */
@@ -913,9 +905,7 @@ spock_apply_heap_mi_flush(void)
 									  &(pglmistate->buffered_tuples[i]->t_self),
 #endif
 									  pglmistate->aestate->estate
-#if PG_VERSION_NUM >= 90500
 									  , false, NULL, NIL
-#endif
 									 );
 			ExecARInsertTriggers(pglmistate->aestate->estate, resultRelInfo,
 								 pglmistate->buffered_tuples[i],

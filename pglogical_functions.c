@@ -265,7 +265,7 @@ pglogical_drop_node(PG_FUNCTION_ARGS)
 			{
 				res = SPI_execute("SELECT pg_catalog.pg_drop_replication_slot(slot_name)"
 								  "  FROM pg_catalog.pg_replication_slots"
-								  " WHERE (plugin = 'pglogical_output' OR plugin = 'pglogical')"
+								  " WHERE (plugin = 'spock_output' OR plugin = 'spock')"
 								  "   AND database = current_database()"
 								  "   AND slot_name ~ 'pgl_.*'",
 								  false, 0);

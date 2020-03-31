@@ -1,16 +1,16 @@
-# contrib/pglogical/Makefile
+# contrib/spock/Makefile
 
-MODULE_big = pglogical
-EXTENSION = pglogical
-PGFILEDESC = "spock - bi-directional logical replication with with conflict resolution"
+MODULE_big = spock
+EXTENSION = spock
+PGFILEDESC = "SPOCK - Bi-directional logical replication with conflict resolution"
 
-MODULES = pglogical_output
+MODULES = spock_output
 
-DATA = pglogical--2.2.2--2.3.0.sql \
-	   pglogical--2.3.0.sql
+DATA = pglogical--2.2.2-spock--3.1.sql \
+	   spock--3.1.sql
 
 OBJS = pglogical_apply.o pglogical_conflict.o pglogical_manager.o \
-	   pglogical.o pglogical_node.o pglogical_relcache.o \
+	   spock.o pglogical_node.o pglogical_relcache.o \
 	   pglogical_repset.o pglogical_rpc.o pglogical_functions.o \
 	   pglogical_queue.o pglogical_fe.o pglogical_worker.o \
 	   pglogical_sync.o pglogical_sequences.o pglogical_executor.o \
@@ -51,7 +51,7 @@ SHLIB_LINK += $(libpq)
 OBJS += $(srcdir)/compat$(PGVER)/pglogical_compat.o
 
 requires =
-control_path = $(abspath $(srcdir))/pglogical.control
+control_path = $(abspath $(srcdir))/spock.control
 
 EXTRA_CLEAN += $(control_path)
 
@@ -86,10 +86,10 @@ pglogical_create_subscriber: pglogical_create_subscriber.o pglogical_fe.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LDFLAGS_EX) $(libpq_pgport) $(LIBS) -o $@$(X)
 
 
-pglogical.control: pglogical.control.in pglogical.h
-	sed 's/__PGLOGICAL_VERSION__/$(pglogical_version)/;s/__REQUIRES__/$(requires)/' $(realpath $(srcdir)/pglogical.control.in) > $(control_path)
+spock.control: spock.control.in pglogical.h
+	sed 's/__PGLOGICAL_VERSION__/$(pglogical_version)/;s/__REQUIRES__/$(requires)/' $(realpath $(srcdir)/spock.control.in) > $(control_path)
 
-all: pglogical.control
+all: spock.control
 
 GITHASH=$(shell if [ -e .distgitrev ]; then cat .distgitrev; else git rev-parse --short HEAD; fi)
 
@@ -135,7 +135,7 @@ endef
 check_prove:
 	$(prove_check)
 
-.PHONY: all check regresscheck pglogical.control
+.PHONY: all check regresscheck spock.control
 
 define _pgl_create_recursive_target
 .PHONY: $(1)-$(2)-recurse

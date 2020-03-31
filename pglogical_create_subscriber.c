@@ -854,7 +854,7 @@ initialize_replication_slot(PGconn *conn, char *dbname,
 	/* And finally, create the slot. */
 	appendPQExpBuffer(&query, "SELECT pg_create_logical_replication_slot(%s, '%s');",
 					  PQescapeLiteral(conn, slot_name, strlen(slot_name)),
-					  "pglogical_output");
+					  "spock_output");
 
 	res = PQexec(conn, query.data);
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)

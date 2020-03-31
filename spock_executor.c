@@ -92,9 +92,6 @@ create_estate_for_relation(Relation rel, bool forwrite)
 	estate->es_result_relation_info = resultRelInfo;
 #if PG_VERSION_NUM >= 120000
 	ExecInitRangeTable(estate, list_make1(rte));
-#elif PG_VERSION_NUM >= 110000 && SECONDQ_VERSION_NUM >= 103
-	/* 2ndQPostgres 11 r1.3 changes executor API */
-	estate->es_range_table = alist_add(NULL, rte);
 #else
 	estate->es_range_table = list_make1(rte);
 #endif
@@ -249,9 +246,6 @@ spock_ProcessUtility(
 						 QueryEnvironment *queryEnv,
 #endif
 						 DestReceiver *dest,
-#ifdef XCP
-						 bool sentToRemote,
-#endif
 						 char *completionTag)
 {
 #if PG_VERSION_NUM >= 100000
@@ -260,9 +254,7 @@ spock_ProcessUtility(
 	Node	   *parsetree = pstmt;
 	#define		queryEnv NULL
 #endif
-#ifndef XCP
 	#define		sentToRemote NULL
-#endif
 
 	dropping_spock_obj = false;
 

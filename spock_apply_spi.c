@@ -297,9 +297,6 @@ spock_apply_spi_delete(SpockRelation *rel, SpockTupleData *oldtup)
 }
 
 
-/* We currently can't support multi insert using COPY on windows. */
-#if !defined(WIN32) && !defined(SPK_NO_STDIN_ASSIGN)
-
 bool
 spock_apply_spi_can_mi(SpockRelation *rel)
 {
@@ -676,25 +673,3 @@ spock_copyOneRowTo(spock_copyState *pglcstate, Datum *values,
 	MemoryContextSwitchTo(oldcontext);
 }
 
-#else /* WIN32 */
-
-bool
-spock_apply_spi_can_mi(SpockRelation *rel)
-{
-	return false;
-}
-
-void
-spock_apply_spi_mi_add_tuple(SpockRelation *rel,
-								 SpockTupleData *tup)
-{
-	elog(ERROR, "spock_apply_spi_mi_add_tuple called unexpectedly");
-}
-
-void
-spock_apply_spi_mi_finish(SpockRelation *rel)
-{
-	elog(ERROR, "spock_apply_spi_mi_finish called unexpectedly");
-}
-
-#endif /* WIN32 */

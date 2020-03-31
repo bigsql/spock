@@ -33,7 +33,7 @@ EXTRA_CLEAN += compat96/spock_compat.o compat10/spock_compat.o \
 
 # The # in #define is taken as a comment, per https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=142043
 # so it must be escaped. The $ placeholders in awk must be doubled too.
-pglogical_version=$(shell awk '/\#define PGLOGICAL_VERSION[ \t]+\".*\"/ { print substr($$3,2,length($$3)-2) }' $(realpath $(srcdir)/spock.h) )
+spock_version=$(shell awk '/\#define SPOCK_VERSION[ \t]+\".*\"/ { print substr($$3,2,length($$3)-2) }' $(realpath $(srcdir)/spock.h) )
 
 # For regression checks
 # http://www.postgresql.org/message-id/CAB7nPqTsR5o3g-fBi6jbsVdhfPiLFWQ_0cGU5=94Rv_8W3qvFA@mail.gmail.com
@@ -87,7 +87,7 @@ spock_create_subscriber: spock_create_subscriber.o spock_fe.o
 
 
 spock.control: spock.control.in spock.h
-	sed 's/__PGLOGICAL_VERSION__/$(pglogical_version)/;s/__REQUIRES__/$(requires)/' $(realpath $(srcdir)/spock.control.in) > $(control_path)
+	sed 's/__SPOCK_VERSION__/$(spock_version)/;s/__REQUIRES__/$(requires)/' $(realpath $(srcdir)/spock.control.in) > $(control_path)
 
 all: spock.control
 
@@ -101,8 +101,8 @@ dist-common: clean
 	@echo $(GITHASH) > .distgitrev
 	@git name-rev --tags --name-only `cat .distgitrev` > .distgittag
 	@(git ls-tree -r -t --full-tree HEAD --name-only \
-	  && cd pglogical_dump\
-	  && git ls-tree -r -t --full-tree HEAD --name-only | sed 's/^/pglogical_dump\//'\
+	  && cd spock_dump\
+	  && git ls-tree -r -t --full-tree HEAD --name-only | sed 's/^/spock_dump\//'\
 	 ) |\
 	  tar cjf "${distdir}.tar.bz2" --transform="s|^|${distdir}/|" --no-recursion \
 	    -T - .distgitrev .distgittag
@@ -111,11 +111,11 @@ dist-common: clean
 	@md5sum "${distdir}.tar.bz2" > "${distdir}.tar.bz2.md5"
 	@if test -n "$(GPGSIGNKEYS)"; then gpg -q -a -b $(shell for x in $(GPGSIGNKEYS); do echo -u $$x; done) "${distdir}.tar.bz2"; else echo "No GPGSIGNKEYS passed, not signing tarball. Pass space separated keyid list as make var to sign."; fi
 
-dist: distdir=spock-$(pglogical_version)
+dist: distdir=spock-$(spock_version)
 dist: wanttag=1
 dist: dist-common
 
-git-dist: distdir=spock-$(pglogical_version)_git$(GITHASH)
+git-dist: distdir=spock-$(spock_version)_git$(GITHASH)
 git-dist: wanttag=0
 git-dist: dist-common
 

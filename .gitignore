@@ -1,7 +1,7 @@
 results
 regression_output
 tmp_check
-pglogical_create_subscriber
+spock_create_subscriber
 .vimrc
 *.o
 *.so
@@ -9,8 +9,8 @@ pglogical_create_subscriber
 *.gcno
 *~
 spock.control
-pglogical-*.tar.bz2
-pglogical-*.tar.bz2.md5
-pglogical-*.tar.bz2.asc
+spock-*.tar.bz2
+spock-*.tar.bz2.md5
+spock-*.tar.bz2.asc
 valgrind-*-*.log
 /postgres

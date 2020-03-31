@@ -3,7 +3,7 @@
  * spock_output_config.c
  *		  Logical Replication output plugin configuration handling
  *
- * Copyright (c) 2012-2015, PostgreSQL Global Development Group
+ * Copyright (c) 2012-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		  spock_output_config.c

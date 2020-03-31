@@ -3,7 +3,7 @@
  * spock_relcache.c
  *     Caching relation specific information
  *
- * Copyright (C) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		spock_relcache.c

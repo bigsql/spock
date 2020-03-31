@@ -665,10 +665,6 @@ spock_worker_shmem_startup(void)
 	if (prev_shmem_startup_hook != NULL)
 		prev_shmem_startup_hook();
 
-	/*
-	 * This is kludge for Windows (Postgres does not define the GUC variable
-	 * as PGDLLIMPORT)
-	 */
 	nworkers = atoi(GetConfigOptionByName("max_worker_processes", NULL,
 										  false));
 
@@ -697,12 +693,7 @@ spock_worker_shmem_init(void)
 
 	Assert(process_shared_preload_libraries_in_progress);
 
-	/*
-	 * This is cludge for Windows (Postgres des not define the GUC variable
-	 * as PGDDLIMPORT)
-	 */
-	nworkers = atoi(GetConfigOptionByName("max_worker_processes", NULL,
-										  false));
+	nworkers = atoi(GetConfigOptionByName("max_worker_processes", NULL, false));
 
 	/* Allocate enough shmem for the worker limit ... */
 	RequestAddinShmemSpace(worker_shmem_size(nworkers));

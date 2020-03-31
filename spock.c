@@ -3,7 +3,7 @@
  * spock.c
  * 		spock initialization and common functionality
  *
- * Copyright (c) 2015, PostgreSQL Global Development Group
+ * Copyright (c) 2015-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		  spock.c
@@ -61,12 +61,10 @@ PG_MODULE_MAGIC;
 
 static const struct config_enum_entry SpockConflictResolvers[] = {
 	{"error", SPOCK_RESOLVE_ERROR, false},
-#ifndef XCP
 	{"apply_remote", SPOCK_RESOLVE_APPLY_REMOTE, false},
 	{"keep_local", SPOCK_RESOLVE_KEEP_LOCAL, false},
 	{"last_update_wins", SPOCK_RESOLVE_LAST_UPDATE_WINS, false},
 	{"first_update_wins", SPOCK_RESOLVE_FIRST_UPDATE_WINS, false},
-#endif
 	{NULL, 0, false}
 };
 
@@ -723,25 +721,10 @@ spock_temp_directory_assing_hook(const char *newval, void *extra)
 	}
 	else
 	{
-#ifndef WIN32
 		const char *tmpdir = getenv("TMPDIR");
 
 		if (!tmpdir)
 			tmpdir = "/tmp";
-#else
-		char		tmpdir[MAXPGPATH];
-		int			ret;
-
-		ret = GetTempPath(MAXPGPATH, tmpdir);
-		if (ret == 0 || ret > MAXPGPATH)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("could not locate temporary directory: %s\n",
-							!ret ? strerror(errno) : "")));
-			return false;
-		}
-#endif
 
 		spock_temp_directory = strdup(tmpdir);
 
@@ -769,11 +752,7 @@ _PG_init(void)
 							 gettext_noop("Sets method used for conflict resolution for resolvable conflicts."),
 							 NULL,
 							 &spock_conflict_resolver,
-#ifdef XCP
-							 SPOCK_RESOLVE_ERROR,
-#else
 							 SPOCK_RESOLVE_APPLY_REMOTE,
-#endif
 							 SpockConflictResolvers,
 							 PGC_SUSET, 0,
 							 spock_conflict_resolver_check_hook,
@@ -800,11 +779,7 @@ _PG_init(void)
 							 "Use SPI instead of low-level API for applying changes",
 							 NULL,
 							 &spock_use_spi,
-#ifdef XCP
-							 true,
-#else
 							 false,
-#endif
 							 PGC_POSTMASTER,
 							 0,
 							 NULL, NULL, NULL);

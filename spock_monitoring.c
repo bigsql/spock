@@ -3,7 +3,7 @@
  * spock_monitoring.c
  * 		support for monitoring and progress tracking
  *
- * Copyright (c) 2017, PostgreSQL Global Development Group
+ * Copyright (c) 2017-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		  spock_monitoring.c

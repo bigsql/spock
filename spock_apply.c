@@ -38,10 +38,6 @@
 
 #include "optimizer/planner.h"
 
-#ifdef XCP
-#include "pgxc/pgxcnode.h"
-#endif
-
 #include "replication/origin.h"
 #include "replication/reorderbuffer.h"
 
@@ -272,7 +268,7 @@ ensure_transaction(void)
 	 * statement per applied transaction. We must set the statement start time
 	 * because StartTransaction() uses it to initialize the transaction cached
 	 * timestamp used by current_timestamp. If we don't set it, every xact will
-	 * get the same current_timestamp. See 2ndQuadrant/spock_internal#148
+	 * get the same current_timestamp. 
 	 */
 	SetCurrentStatementStartTimestamp();
 
@@ -1910,13 +1906,6 @@ spock_apply_main(Datum main_arg)
 	MySubscription = get_subscription(MyApplyWorker->subid);
 	MemoryContextSwitchTo(saved_ctx);
 
-#ifdef XCP
-	/*
-	 * When runnin under XL, initialise the XL executor so that the datanode
-	 * and coordinator information is initialised properly.
-	 */
-	InitMultinodeExecutor(false);
-#endif
 	CommitTransactionCommand();
 
 	elog(LOG, "starting apply for subscription %s", MySubscription->name);

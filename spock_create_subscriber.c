@@ -3,7 +3,7 @@
  * spock_create_subscriber.c
  *		Initialize a new spock subscriber from a physical base backup
  *
- * Copyright (C) 2012-2016, PostgreSQL Global Development Group
+ * Copyright (C) 2012-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		spock_create_subscriber.c
@@ -1727,15 +1727,13 @@ postmaster_is_alive(pid_t pid)
 	 * considering the permissions on $PGDATA, that means it's not the
 	 * postmaster we are after.
 	 *
-	 * Don't believe that our own PID or parent shell's PID is the postmaster,
-	 * either.  (Windows hasn't got getppid(), though.)
 	 */
 	if (pid == getpid())
 		return false;
-#ifndef WIN32
+
 	if (pid == getppid())
 		return false;
-#endif
+
 	if (kill(pid, 0) == 0)
 		return true;
 	return false;

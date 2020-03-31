@@ -1,7 +1,7 @@
 # spock extension
-comment = 'PostgreSQL Logical Replication'
-default_version = '__PGLOGICAL_VERSION__'
+comment = 'Logical Bi-directional replication with conflict resolution'
+default_version = '__SPOCK_VERSION__'
 module_pathname = '$libdir/spock'
 relocatable = false
 __REQUIRES__
-schema = pglogical
+schema = spock

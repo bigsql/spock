@@ -10,9 +10,9 @@ delay. Some related discussion on them:
 like oid, xmin.
 
 * What happens if a column being filtered on is dropped?
- - Currently in pglogical replication, even primary key can be dropped at provider.
+ - Currently in spock replication, even primary key can be dropped at provider.
 If a column being filtered on is dropped, at provider it is removed from the column
-filter too. This can be seen using `pglogical.show_repset_table_info()`.
+filter too. This can be seen using `spock.show_repset_table_info()`.
  Columns at subscriber remain as is, which is correct and expected. At subscriber,
 in this state INSERTs replicate, but UPDATEs and DELETEs do not.
 
@@ -44,5 +44,5 @@ stopping and starting the database service twice per year.
  - Yes, `apply_delay` include TimeZone changes, for example Daylight Savings Time. Value of
 `apply_delay` stays the same in practice, if daylight savings time switch happens after
 subscription was created.
-However, we do not recommend running heavy workloads during switching time as pglogical
+However, we do not recommend running heavy workloads during switching time as spock
 replication needs some time ( ~ 5 minutes) to recover fine.

@@ -137,7 +137,7 @@ check_prove:
 
 .PHONY: all check regresscheck spock.control
 
-define _pgl_create_recursive_target
+define _spk_create_recursive_target
 .PHONY: $(1)-$(2)-recurse
 $(1): $(1)-$(2)-recurse
 $(1)-$(2)-recurse: $(if $(filter check, $(3)), temp-install)
@@ -145,7 +145,7 @@ $(1)-$(2)-recurse: $(if $(filter check, $(3)), temp-install)
 	$$(MAKE) -C $(2) -f $(abspath $(srcdir))/$(2)/Makefile VPATH=$(abspath $(srcdir))/$(2) $(3)
 endef
 
-$(foreach target,$(if $1,$1,$(standard_targets)),$(foreach subdir,$(if $2,$2,$(SUBDIRS)),$(eval $(call _pgl_create_recursive_target,$(target),$(subdir),$(if $3,$3,$(target))))))
+$(foreach target,$(if $1,$1,$(standard_targets)),$(foreach subdir,$(if $2,$2,$(SUBDIRS)),$(eval $(call _spk_create_recursive_target,$(target),$(subdir),$(if $3,$3,$(target))))))
 
 
 #

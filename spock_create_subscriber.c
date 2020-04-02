@@ -486,7 +486,6 @@ main(int argc, char **argv)
 	print_msg(VERBOSITY_VERBOSE,
 			  _("Removing old spock configuration ...\n"));
 
-
 	for (dbnum = 0; dbnum < n_databases; dbnum++)
 	{
 		char *db = database_list[dbnum];
@@ -1101,7 +1100,6 @@ spock_subscribe(PGconn *conn, char *subscriber_name, char *subscriber_dsn,
 	}
 	PQclear(res);
 
-	/* TODO */
 	res = PQexec(conn, "UPDATE spock.local_sync_status SET sync_status = 'r'");
 	if (PQresultStatus(res) != PGRES_COMMAND_OK)
 	{

@@ -61,7 +61,6 @@ pg_logical_get_remote_repset_tables(PGconn *conn, List *replication_sets)
 	initStringInfo(&query);
 	if (spock_remote_function_exists(conn, "spock", "show_repset_table_info_by_target", 3, NULL))
 	{
-		/* Spock 2.3+ */
 		appendStringInfo(&query,
 						 "SELECT i.relid, i.nspname, i.relname, i.att_list,"
 						 "       i.has_row_filter, i.nsptarget, i.reltarget"
@@ -71,17 +70,15 @@ pg_logical_get_remote_repset_tables(PGconn *conn, List *replication_sets)
 	}
 	else if (spock_remote_function_exists(conn, "spock", "show_repset_table_info", 2, NULL))
 	{
-		/* Spock 2.0+ */
 		appendStringInfo(&query,
 						 "SELECT i.relid, i.nspname, i.relname, i.att_list,"
-						 "       i.has_row_filter, i.nspname as i.nsptarget, i.relname as i.reltarget"
+						 "       i.has_row_filter, i.nspname as nsptarget, i.relname as reltarget"
 						 "  FROM (SELECT DISTINCT relid FROM spock.tables WHERE set_name = ANY(ARRAY[%s])) t,"
 						 "       LATERAL spock.show_repset_table_info(t.relid, ARRAY[%s]) i",
 						 repsetarr.data, repsetarr.data);
 	}
 	else
 	{
-		/* Spock 1.x */
 		appendStringInfo(&query,
 						 "SELECT r.oid AS relid, t.nspname, t.relname, ARRAY(SELECT attname FROM pg_attribute WHERE attrelid = r.oid AND NOT attisdropped AND attnum > 0) AS att_list,"
 						 "       false AS has_row_filter, t.nspname as nsptarget, t.relname as reltarget"
@@ -91,7 +88,6 @@ pg_logical_get_remote_repset_tables(PGconn *conn, List *replication_sets)
 	}
 
 	res = PQexec(conn, query.data);
-	/* TODO: better error message? */
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
 		elog(ERROR, "could not get table list: %s", PQresultErrorMessage(res));
 
